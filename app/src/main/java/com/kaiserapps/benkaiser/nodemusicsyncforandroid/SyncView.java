@@ -15,7 +15,6 @@ import com.koushikdutta.async.http.AsyncHttpClient;
 import com.koushikdutta.async.http.socketio.Acknowledge;
 import com.koushikdutta.async.http.socketio.ConnectCallback;
 import com.koushikdutta.async.http.socketio.EventCallback;
-import com.koushikdutta.async.http.socketio.JSONCallback;
 import com.koushikdutta.async.http.socketio.SocketIOClient;
 
 import org.json.JSONArray;
@@ -44,6 +43,9 @@ public class SyncView extends Activity {
                 if(!host_string.startsWith("http://")){
                     host_string = "http://".concat(host_string);
                 }
+                // save the url
+                SyncApplication syncApp = (SyncApplication) getApplication();
+                syncApp.setUrl(host_string);
                 Log.d("Logging", host_string);
                 SocketIOClient.connect(AsyncHttpClient.getDefaultInstance(), host_string, new ConnectCallback() {
                     @Override
@@ -53,21 +55,42 @@ public class SyncView extends Activity {
                             return;
                         }
                         Log.d("CONNECTED", "YAY!");
+                        // fetch the data
                         client.emitEvent("fetch_playlists");
+                        client.emitEvent("fetch_songs");
+                        // respond to the playlists
                         client.on("playlists", new EventCallback() {
                             @Override
                             public void onEvent(JSONArray argument, Acknowledge acknowledge) {
-                                Log.d("GOT RESULT", "YAY!");
                                 JSONArray playlists = new JSONArray();
                                 try {
                                     playlists = (JSONArray) (((JSONObject) argument.get(0)).get("playlists"));
                                 } catch (JSONException e){
                                     e.printStackTrace();
                                 }
-                                System.out.println("args: " + playlists.toString());
-                                Intent intent = new Intent(SyncView.this, playlist_selection.class);
-                                intent.putExtra("playlists", playlists.toString());
+                                System.out.println("Playlists: " + playlists.length());
+                                // set the playlists
+                                SyncApplication syncApp = (SyncApplication) getApplication();
+                                syncApp.setPlaylists(playlists);
+                                // load the next activity
+                                Intent intent = new Intent(SyncView.this, PlaylistSelectionView.class);
                                 SyncView.this.startActivity(intent);
+                            }
+                        });
+                        // respond to the songs, but don't wait for them
+                        client.on("songs", new EventCallback() {
+                            @Override
+                            public void onEvent(JSONArray argument, Acknowledge acknowledge) {
+                                JSONArray songs = new JSONArray();
+                                try {
+                                    songs = (JSONArray) (((JSONObject) argument.get(0)).get("songs"));
+                                } catch (JSONException e){
+                                    e.printStackTrace();
+                                }
+                                System.out.println("Songs: " + songs.length());
+                                // set the songs
+                                SyncApplication syncApp = (SyncApplication) getApplication();
+                                syncApp.setSongs(songs);
                             }
                         });
                     }
@@ -77,22 +100,4 @@ public class SyncView extends Activity {
     }
 
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.sync_view, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-        if (id == R.id.action_settings) {
-            return true;
-        }
-        return super.onOptionsItemSelected(item);
-    }
 }

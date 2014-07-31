@@ -7,5 +7,6 @@
     <string name="title_activity_playlist_selection">Playlist Selection</string>
     <string name="hello_world">Hello world!</string>
     <string name="playlist_selection">Select the Playlists you would like to sync:</string>
+    <string name="title_activity_process_sync_view">Syncing Playlists Across</string>
 
 </resources>

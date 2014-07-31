@@ -3,6 +3,7 @@
     package="com.kaiserapps.benkaiser.nodemusicsyncforandroid" >
 
     <application
+        android:name=".SyncApplication"
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
@@ -17,12 +18,25 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".playlist_selection"
-            android:label="@string/title_activity_playlist_selection" >
+            android:name=".PlaylistSelectionView"
+            android:label="@string/title_activity_playlist_selection"
+            android:parentActivityName=".SyncView" >
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.kaiserapps.benkaiser.nodemusicsyncforandroid.SyncView" />
+        </activity>
+        <activity
+            android:name=".ProcessSyncView"
+            android:label="@string/title_activity_process_sync_view"
+            android:parentActivityName=".PlaylistSelectionView" >
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.kaiserapps.benkaiser.nodemusicsyncforandroid.PlaylistSelectionView" />
         </activity>
     </application>
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
 </manifest>

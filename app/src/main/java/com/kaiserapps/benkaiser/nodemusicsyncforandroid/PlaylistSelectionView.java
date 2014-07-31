@@ -22,10 +22,11 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 
 
-public class playlist_selection extends Activity {
+public class PlaylistSelectionView extends Activity {
 
     JSONArray playlists;
     ArrayList<CheckBox> chkboxarr;
+    private SyncApplication syncState;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,13 +39,9 @@ public class playlist_selection extends Activity {
         // get a handle on the table
         TableLayout tl = (TableLayout)findViewById(R.id.playlist_table);
 
-        // load the passed playlists
-        playlists = new JSONArray();
-        try {
-            playlists = new JSONArray(getIntent().getStringExtra("playlists"));
-        } catch(JSONException e){
-            e.printStackTrace();
-        }
+        // load the playlists
+        syncState = (SyncApplication) getApplication();
+        playlists = syncState.getPlaylists();
 
         // draw the table
         try {
@@ -69,39 +66,25 @@ public class playlist_selection extends Activity {
         send.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                JSONArray marked_lists = new JSONArray();
                 for (int cnt = 0; cnt < playlists.length(); cnt++) {
                     String title = "";
                     try {
                         JSONObject playlist = (JSONObject) playlists.get(cnt);
                         title = (String) playlist.get("title");
+                        if(chkboxarr.get(cnt).isChecked()) {
+                            Log.d("Playlist " + title, " marked for syncing!");
+                            marked_lists.put((JSONObject)playlists.get(cnt));
+                        }
                     } catch(Exception e){
                         e.printStackTrace();
                     }
-                    if(chkboxarr.get(cnt).isChecked()) {
-                        Log.d("Playlist " + title, "checked!");
-                    }
                 }
+                syncState.setMarked_playlists(marked_lists);
+                Intent intent = new Intent(PlaylistSelectionView.this, ProcessSyncView.class);
+                PlaylistSelectionView.this.startActivity(intent);
             }
         });
     }
 
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.playlist_selection, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-        if (id == R.id.action_settings) {
-            return true;
-        }
-        return super.onOptionsItemSelected(item);
-    }
 }

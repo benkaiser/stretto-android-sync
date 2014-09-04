@@ -158,7 +158,7 @@ public class SyncView extends Activity {
     public void addToRecentConnections(final String connection) {
         final List<String> connections = getRecentConnections();
 
-        if(!connections.contains(connection)) {
+        if(connections == null || !connections.contains(connection)) {
             SharedPreferences prefs = SyncView.this.getSharedPreferences("NodeMusicSyncApp", Context.MODE_PRIVATE);
             SharedPreferences.Editor editor = prefs.edit();
 

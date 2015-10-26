@@ -21,12 +21,17 @@ import com.koushikdutta.async.http.AsyncHttpClient;
 import com.koushikdutta.async.http.socketio.Acknowledge;
 import com.koushikdutta.async.http.socketio.ConnectCallback;
 import com.koushikdutta.async.http.socketio.EventCallback;
+import com.koushikdutta.async.http.socketio.EventEmitter;
 import com.koushikdutta.async.http.socketio.SocketIOClient;
+
+import io.socket.client.*;
+import io.socket.emitter.Emitter;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -37,10 +42,13 @@ public class SyncView extends Activity {
 
     final private static String PREF_KEY = "recentConnections";
     EditText host_ip;
+    Socket socket;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        final Activity currentActivity = this;
 
         // show view
         setContentView(R.layout.activity_sync_view);
@@ -67,64 +75,88 @@ public class SyncView extends Activity {
                 Log.d("Logging", host_string);
                 final String test = host_string;
 
-                SocketIOClient.connect(AsyncHttpClient.getDefaultInstance(), host_string, new ConnectCallback() {
-                    @Override
-                    public void onConnectCompleted(Exception ex, SocketIOClient client) {
-                        if (ex != null) {
-                            ex.printStackTrace();
-                            AlertDialog.Builder builder = new AlertDialog.Builder(SyncView.this);
-                                builder.setTitle("Error")
-                                        .setMessage("Host not found.");
-                            builder.create().show();
+                try {
+                    // options for connection
+                    IO.Options opts = new IO.Options();
+                    opts.reconnection = false;
 
-                            return;
+                    // initialise the socket
+                    socket = IO.socket(host_string, opts);
+
+                    // emit the requests for data
+                    socket.emit("fetch_playlists");
+                    socket.emit("fetch_songs");
+
+                    // add handlers for the data
+                    socket.once("playlists", new Emitter.Listener() {
+                        @Override
+                        public void call(Object... args) {
+                            JSONArray playlists = new JSONArray();
+                            try {
+                                playlists = (JSONArray) (((JSONObject) args[0]).get("playlists"));
+                            } catch (JSONException e) {
+                                e.printStackTrace();
+                            }
+                            System.out.println("Playlists: " + playlists.length());
+                            // set the playlists
+                            SyncApplication syncApp = (SyncApplication) getApplication();
+                            syncApp.setPlaylists(playlists);
+                            // load the next activity, don't wait for the songs
+                            Intent intent = new Intent(SyncView.this, PlaylistSelectionView.class);
+                            SyncView.this.startActivity(intent);
+
+                            Log.d("STARTED", "Loading Platlist View");
                         }
+                    });
 
-                        Log.d("CONNECTED", "YAY!");
-
-                        // Add to recent connections
-                        addToRecentConnections(test);
-
-                        // fetch the data
-                        client.emitEvent("fetch_playlists");
-                        client.emitEvent("fetch_songs");
-                        // respond to the playlists
-                        client.on("playlists", new EventCallback() {
-                            @Override
-                            public void onEvent(JSONArray argument, Acknowledge acknowledge) {
-                                JSONArray playlists = new JSONArray();
-                                try {
-                                    playlists = (JSONArray) (((JSONObject) argument.get(0)).get("playlists"));
-                                } catch (JSONException e) {
-                                    e.printStackTrace();
-                                }
-                                System.out.println("Playlists: " + playlists.length());
-                                // set the playlists
-                                SyncApplication syncApp = (SyncApplication) getApplication();
-                                syncApp.setPlaylists(playlists);
-                                // load the next activity
-                                Intent intent = new Intent(SyncView.this, PlaylistSelectionView.class);
-                                SyncView.this.startActivity(intent);
+                    socket.once("songs", new Emitter.Listener() {
+                        @Override
+                        public void call(Object... args) {
+                            JSONArray songs = new JSONArray();
+                            try {
+                                songs = (JSONArray) (((JSONObject) args[0]).get("songs"));
+                            } catch (JSONException e) {
+                                e.printStackTrace();
                             }
-                        });
-                        // respond to the songs, but don't wait for them
-                        client.on("songs", new EventCallback() {
-                            @Override
-                            public void onEvent(JSONArray argument, Acknowledge acknowledge) {
-                                JSONArray songs = new JSONArray();
-                                try {
-                                    songs = (JSONArray) (((JSONObject) argument.get(0)).get("songs"));
-                                } catch (JSONException e) {
-                                    e.printStackTrace();
+                            System.out.println("Songs: " + songs.length());
+                            // set the songs
+                            SyncApplication syncApp = (SyncApplication) getApplication();
+                            syncApp.setSongs(songs);
+                        }
+                    });
+
+                    // on a successful connection, save the connection string to the history
+                    socket.on(Socket.EVENT_CONNECT, new Emitter.Listener() {
+                        @Override
+                        public void call(Object... args) {
+                            addToRecentConnections(test);
+                        }
+                    });
+
+                    // on a successful connection, save the connection string to the history
+                    socket.on(Socket.EVENT_CONNECT_ERROR, new Emitter.Listener() {
+                        @Override
+                        public void call(Object... args) {
+                            currentActivity.runOnUiThread(new Runnable() {
+                                public void run() {
+                                    AlertDialog.Builder builder = new AlertDialog.Builder(SyncView.this);
+                                    builder.setTitle("Error")
+                                            .setMessage("Failed to connect to server.");
+                                    builder.create().show();
                                 }
-                                System.out.println("Songs: " + songs.length());
-                                // set the songs
-                                SyncApplication syncApp = (SyncApplication) getApplication();
-                                syncApp.setSongs(songs);
-                            }
-                        });
-                    }
-                });
+                            });
+                        }
+                    });
+
+                    // start the connection
+                    socket.connect();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    AlertDialog.Builder builder = new AlertDialog.Builder(SyncView.this);
+                    builder.setTitle("Error")
+                            .setMessage("Host not found.");
+                    builder.create().show();
+                }
             }
         });
 
@@ -132,7 +164,7 @@ public class SyncView extends Activity {
             public void onClick(View view) {
                 final Context context = SyncView.this;
 
-                final List<String> connections = getRecentConnections();
+                final ArrayList<String> connections = getRecentConnections();
 
                 AlertDialog.Builder builder = new AlertDialog.Builder(context);
                 builder.setTitle("Recent connections");
@@ -156,29 +188,30 @@ public class SyncView extends Activity {
     }
 
     public void addToRecentConnections(final String connection) {
-        final List<String> connections = getRecentConnections();
+        final ArrayList<String> connections = getRecentConnections();
 
-        if(connections == null || !connections.contains(connection)) {
+        if(!connections.contains(connection)) {
             SharedPreferences prefs = SyncView.this.getSharedPreferences("NodeMusicSyncApp", Context.MODE_PRIVATE);
             SharedPreferences.Editor editor = prefs.edit();
 
-            List<String> list = new ArrayList<String>();
-            list.add(connection);
+            connections.add(0, connection);
 
-            editor.putString(PREF_KEY, TextUtils.join(",", list));
+            Log.d("Added: ", connection);
+
+            editor.putString(PREF_KEY, TextUtils.join(",", connections));
             editor.commit();
         }
     }
 
-    public List<String> getRecentConnections() {
+    public ArrayList<String> getRecentConnections() {
         SharedPreferences prefs = SyncView.this.getSharedPreferences("NodeMusicSyncApp", Context.MODE_PRIVATE);
         String serialized = prefs.getString(PREF_KEY, null);
 
         if(serialized != null) {
-            List<String> list = Arrays.asList(TextUtils.split(serialized, ","));
+            ArrayList<String> list = new ArrayList<String>(Arrays.asList(TextUtils.split(serialized, ",")));
             return list;
         } else {
-            return null;
+            return new ArrayList<String>();
         }
 
     }

@@ -11,6 +11,12 @@ Download latest build apk [from here](https://raw.githubusercontent.com/benkaise
 - Select the playlists you want to sync to your device
 - Sit back and let it work it's magic!
 
+###Building
+
+Keystore is in the root of this project as `build.keystore`
+
+Password is: `nodemusicsync`
+
 ###Note
 
 This app does not actually play the music on your phone, it just syncs the songs and the playlists across. You can use one of the following music players to play your music:

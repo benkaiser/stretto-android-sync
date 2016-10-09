@@ -64,7 +64,7 @@ public class SyncView extends Activity {
                 // handle click
                 String host_string = host_ip.getText().toString();
                 // if they left off the protocol, add it
-                if (!host_string.startsWith("http://")) {
+                if (!host_string.startsWith("http://") && !host_string.startsWith("https://")) {
                     host_string = "http://".concat(host_string);
                 }
 

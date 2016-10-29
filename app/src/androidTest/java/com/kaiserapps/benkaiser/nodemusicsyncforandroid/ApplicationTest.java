@@ -1,4 +1,4 @@
-package com.kaiserapps.benkaiser.nodemusicsyncforandroid;
+package com.kaiserapps.benkaiser.strettoandroidsync;
 
 import android.app.Application;
 import android.test.ApplicationTestCase;

@@ -1,4 +1,4 @@
-package com.kaiserapps.benkaiser.nodemusicsyncforandroid;
+package com.kaiserapps.benkaiser.strettoandroidsync;
 
 import android.app.Activity;
 import android.content.ContentValues;
@@ -44,7 +44,7 @@ public class ProcessSyncView extends Activity {
     JSONArray marked_playlists;
     JSONArray songs;
     String url;
-    String sync_folder = "node-music-player";
+    String sync_folder = "stretto";
     String output_dir;
     // generated data
     String[] syncSongs;
@@ -335,5 +335,3 @@ public class ProcessSyncView extends Activity {
 
     }
 }
-
-

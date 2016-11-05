@@ -40,7 +40,7 @@ public class ProcessSyncView extends Activity {
     ProgressBar progressBar;
     TextView sync_update;
     // existing data
-    SyncApplication app;
+    com.kaiserapps.benkaiser.strettoandroidsync.SyncApplication app;
     JSONArray marked_playlists;
     JSONArray songs;
     String url;
@@ -58,7 +58,7 @@ public class ProcessSyncView extends Activity {
         sync_update = (TextView) findViewById(R.id.sync_update);
         progressBar = (ProgressBar) findViewById(R.id.sync_progress);
         // get data
-        app = (SyncApplication) getApplication();
+        app = (com.kaiserapps.benkaiser.strettoandroidsync.SyncApplication) getApplication();
         marked_playlists = app.getMarked_playlists();
         songs = app.getSongs();
         url = app.getUrl();

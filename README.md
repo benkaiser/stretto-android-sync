@@ -34,3 +34,8 @@ This app does not actually play the music on your phone, it just syncs the songs
 - Apollo: (Available through CM Apps https://play.google.com/store/apps/details?id=com.maartendekkers.cmapps&hl=en )
 
 Got an Open Source Media Player for Android and want it listed? submit [an issue](https://github.com/benkaiser/stretto-android-sync/issues/new)!
+
+
+### License
+
+MIT License. I would prefer people not distribute this application verbatim via other sources than those provided (Github and Google Play Store) however you are free to do so without repercussions.
